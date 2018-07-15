@@ -26,33 +26,5 @@
         {
             InitializeComponent();
         }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            System.IO.Directory.CreateDirectory("output");
-            var bytes = File.ReadAllBytes("fb.png");
-            using (var img = new Image<Rgba32>(100,100))
-            {
-                img[99, 99] = Rgba32.Black;
-                img[98, 99] = Rgba32.Black;
-                img[97, 99] = Rgba32.Black;
-                img.Mutate(this.Draw);
-                this.Save("mutated.png", img);
-            }
-        }
-
-        private void Draw(IImageProcessingContext<Rgba32> context)
-        {
-            context.DrawLines(new GraphicsOptions(false), Pens.Solid(Rgba32.Black, 1f), new PointF(0, 0), new PointF(50, 70));
-        }
-
-        private void Save(string fileName, Image<Rgba32> image)
-        {
-            using (var stream = new FileStream(fileName, FileMode.OpenOrCreate))
-            {
-                image.SaveAsPng(stream, new PngEncoder());
-            }
-
-        }
     }
 }

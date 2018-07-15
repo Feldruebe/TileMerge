@@ -6,15 +6,79 @@
         xmlns:local="clr-namespace:TileMerger"
         xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525"
-        DataContext="{Binding Main, Source={StaticResource Locator}}">
-  <Grid>
-    <StackPanel>
-      <Grid>
-        <Button Content="{iconPacks:FontAwesome Kind=PooSolid, Spin=True, Width=64, Height=64}" Style="{StaticResource MetroCircleButtonStyle}" Click="Button_Click" />
-      </Grid>
-    </StackPanel>
-  </Grid>
+        xmlns:viewmodel="clr-namespace:TileMerger.ViewModel"
+        mc:Ignorable="d" Width="512" Height="512"
+        Title="MainWindow"
+        DataContext="{Binding Main, Source={StaticResource Locator}}"
+        d:DataContext="{d:DesignInstance viewmodel:MainViewModel}">
+    <Grid>
+        <Grid.Resources>
+            <Style x:Key="TileButtonStyle" />
+            <BitmapImage x:Key="DefaultTileImage" UriSource="Images/Tile.png"/>
+        </Grid.Resources>
+        <Grid Grid.Row="0" Grid.ColumnSpan="2" Grid.RowSpan="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="1" Grid.Row="0" 
+                        VerticalAlignment="Bottom" 
+                        Style="{StaticResource TileButtonStyle}"
+                        Command="{Binding LoadTileCommand}"
+                        CommandParameter="{x:Static viewmodel:TileType.Top}">
+                <Grid>
+                    <Image Source="{Binding TopTileImage, TargetNullValue={StaticResource DefaultTileImage}}" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                    <TextBlock Text="Top Tile" FontSize="25" FontWeight="Bold" VerticalAlignment="Top" HorizontalAlignment="Center" Background="#7FDADADA"/>
+                </Grid>
+            </Button>
+            <Button Grid.Column="0" Grid.Row="1" 
+                        HorizontalAlignment="Right"
+                        Style="{StaticResource TileButtonStyle}"
+                        Command="{Binding LoadTileCommand}"
+                        CommandParameter="{x:Static viewmodel:TileType.Left}">
+                <Grid>
+                    <Image Source="{Binding LeftTileImage, TargetNullValue={StaticResource DefaultTileImage}}" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                    <TextBlock Text="Left Tile" FontSize="25" FontWeight="Bold" VerticalAlignment="Bottom" HorizontalAlignment="Left" Background="#7FDADADA"/>
+                </Grid>
+            </Button>
+            <Button Grid.Column="1" Grid.Row="2" 
+                        VerticalAlignment="Top" 
+                        Style="{StaticResource TileButtonStyle}"
+                        Command="{Binding LoadTileCommand}"
+                        CommandParameter="{x:Static viewmodel:TileType.Bottom}">
+                <Grid>
+                    <Image Source="{Binding BottomTileImage, TargetNullValue={StaticResource DefaultTileImage}}" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                    <TextBlock Text="Bottom Tile" FontSize="25" FontWeight="Bold" VerticalAlignment="Bottom" HorizontalAlignment="Center" Background="#7FDADADA"/>
+                </Grid>
+            </Button>
+            <Button Grid.Column="2" Grid.Row="1" 
+                        HorizontalAlignment="Left"
+                        Style="{StaticResource TileButtonStyle}"
+                        Command="{Binding LoadTileCommand}"
+                        CommandParameter="{x:Static viewmodel:TileType.Right}">
+                <Grid>
+                    <Image Source="{Binding RightTileImage, TargetNullValue={StaticResource DefaultTileImage}}" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                    <TextBlock Text="Right Tile" FontSize="25" FontWeight="Bold" VerticalAlignment="Bottom" HorizontalAlignment="Right" Background="#7FDADADA"/>
+                </Grid>
+            </Button>
+
+            <Grid Grid.Column="1" Grid.Row="1">
+                <Image Source="{Binding MergedTileImage, TargetNullValue={StaticResource DefaultTileImage}}" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+            </Grid>
+
+            <StackPanel Grid.Row="2" Grid.Column="2" VerticalAlignment="Bottom">
+                <Slider></Slider>
+                <Button Grid.Row="1" Grid.Column="1" HorizontalAlignment="Right" Style="{StaticResource MetroCircleButtonStyle}" Width="50" Height="50">
+                    <iconPacks:MaterialLight Kind="ContentSaveAll" Width="25" Height="25"/>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Grid>
 </mah:MetroWindow>
 
