@@ -3,13 +3,16 @@ using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace TileMerger.Imageing
 {
+    using System.Numerics;
+
+    using MathNet.Spatial.Euclidean;
+
     public class TileMerge
     {
         public async static Task<Image<Rgba32>> MergeTiles(Tiles tiles, CancellationToken token)
@@ -18,49 +21,93 @@ namespace TileMerger.Imageing
             {
                 Image<Rgba32> resultImage = null;
 
-                if(!tiles.CheckSize())
+                if (!tiles.CheckSize())
                 {
                     return resultImage;
                 }
 
-                if (tiles.LeftImage != null && tiles.RightImage != null)
+                resultImage = new Image<Rgba32>(tiles.ImagesWidth, tiles.ImagesHeight);
+
+                var mergeCenter = new Point2D(tiles.HorizontalSeperationIndex, tiles.VerticalSeperationIndex);
+                var leftMergePoint = new Point2D(0, tiles.VerticalSeperationIndex);
+                var rightMergePoint = new Point2D(tiles.ImagesWidth, tiles.VerticalSeperationIndex);
+                var topMergePoint = new Point2D(tiles.HorizontalSeperationIndex, tiles.ImagesHeight);
+                var bottomtMergePoint = new Point2D(tiles.HorizontalSeperationIndex, 0);
+                var leftBottomPoint = new Point2D(0, 0);
+                var leftTopPoint = new Point2D(0, tiles.ImagesHeight);
+                var rightTopPoint = new Point2D(tiles.ImagesWidth, tiles.ImagesHeight);
+                var rightBottomPoint = new Point2D(tiles.ImagesWidth, 0);
+
+                Polygon2D bottomPolygon;
+                var bottomLines = GetBorderLines(tiles.LeftImage != null, tiles.RightImage != null, tiles.TopImage != null, leftBottomPoint, leftMergePoint, leftTopPoint, mergeCenter, rightTopPoint, rightMergePoint, rightBottomPoint, out bottomPolygon);
+                Polygon2D leftPolygon;
+                var leftLines = GetBorderLines(tiles.TopImage != null, tiles.BottomImage != null, tiles.RightImage != null, leftTopPoint, topMergePoint, rightTopPoint, mergeCenter, rightBottomPoint, bottomtMergePoint, leftBottomPoint, out leftPolygon);
+                Polygon2D topPolygon;
+                var topLines = GetBorderLines(tiles.RightImage != null, tiles.LeftImage != null, tiles.BottomImage != null, rightTopPoint, rightMergePoint, rightBottomPoint, mergeCenter, leftBottomPoint, leftMergePoint, leftTopPoint, out topPolygon);
+                Polygon2D rightPolygon;
+                var rightLines = GetBorderLines(tiles.BottomImage != null, tiles.TopImage != null, tiles.LeftImage != null, rightBottomPoint, bottomtMergePoint, leftBottomPoint, mergeCenter, leftTopPoint, topMergePoint, rightTopPoint, out rightPolygon);
+
+
+                var leftOrigin = new Vector2(0, tiles.VerticalSeperationIndex / 2f);
+                var maxLeftDistance = Vector2.Subtract(leftOrigin, new Vector2(tiles.HorizontalSeperationEndIndex, tiles.VerticalSeperationIndex / 2f)).Length(); //GetMaxDistanceFromInfluenceOrigin(new Vector2(0, tiles.VerticalSeperationIndex / 2f), influenceTargetTopRight, influenceTargetRightBottom);
+
+                for (int x = 0; x < tiles.ImagesWidth; x++)
                 {
-                    // Two textures case.
-                    var leftImage = tiles.LeftImage;
-                    var rightImage = tiles.RightImage;
-
-                    resultImage = new Image<Rgba32>(leftImage.Width, leftImage.Height);
-
-                    for (int x = 0; x < leftImage.Width; x++)
+                    for (int yIteration = 0; yIteration < tiles.ImagesHeight; yIteration++)
                     {
-                        for (int y = 0; y < leftImage.Height; y++)
-                        {
-                            token.ThrowIfCancellationRequested();
-                            int leftOffset = 0;
-                            int rightOffset = 30;
-                            int influenceWidth = leftImage.Width - leftOffset - rightOffset;
-                            float leftInfluence = 0;
-                            if (x - leftOffset < 0)
-                            {
-                                leftInfluence = 1;
-                            }
-                            else
-                            if (x > leftImage.Width - rightOffset)
-                            {
-                                leftInfluence = 0;
-                            }
-                            else
-                            {
-                                leftInfluence = 1f - (float)(x - leftOffset) / (leftImage.Width - leftOffset - rightOffset);
-                            }
+                        var y = tiles.ImagesHeight - 1 - yIteration;
+                        token.ThrowIfCancellationRequested();
+                        var currentPoint = new Point2D(x, yIteration);
 
-                            float rightInfluence = 1 - leftInfluence;
+                        var normalizedMergeInfluence = NormalizedMergeInfluence(tiles, currentPoint, leftLines, leftPolygon);
 
-                            Rgba32 leftColor = leftImage[x, y];
-                            Rgba32 rightColor = rightImage[x, y];
-                            var resultColor = MultiplyColorWithScalar(leftColor, leftInfluence).ToVector4() + MultiplyColorWithScalar(rightColor, rightInfluence).ToVector4();
-                            resultImage[x, y] = new Rgba32(resultColor);
-                        }
+                        resultImage[x, y] = new Rgba32(1, 0, normalizedMergeInfluence, 1);
+
+                        //if (leftPolygon.EnclosesPoint(currentPoint))
+                        //{
+                        //    resultImage[x, y] = new Rgba32(255, 0, 0, 20);
+                        //}
+
+                        //if (topPolygon.EnclosesPoint(currentPoint))
+                        //{
+                        //    resultImage[x, y] = new Rgba32(0, 255, 0, 128);
+                        //}
+
+                        //if (rightPolygon.EnclosesPoint(currentPoint))
+                        //{
+                        //    resultImage[x, y] = new Rgba32(0, 0, 255, 128);
+                        //}
+
+                        //float leftInfluence = 0;
+                        //var leftDistanceToCurrentPoint = Vector2.Subtract(currentPoint, leftOrigin).Length();
+                        //if (leftDistanceToCurrentPoint > maxLeftDistance)
+                        //{
+                        //    leftInfluence = 0;
+                        //}
+                        //else
+                        //{
+
+                        //}
+
+
+                        //float topInfluence = 0;
+                        //float rightInfluence = 0;
+                        //float bottomInfluence = 0;
+
+
+                        //int imageCount = new[] { tiles.TopImage, tiles.LeftImage, tiles.BottomImage, tiles.RightImage }.Count(image => image != null);
+
+                        //var horizontalInfluence = new[] { tiles.LeftImage, tiles.RightImage }.Count(image => image != null) / (float)imageCount;
+                        //var verticalInfluence = 1 - horizontalInfluence;
+
+                        //var leftColor = tiles.LeftImage?[x, y] ?? tiles.RightImage?[x, y];
+                        //var rightColor = tiles.RightImage?[x, y] ?? tiles.LeftImage?[x, y];
+                        //var topColor = tiles.TopImage?[x, y] ?? tiles.BottomImage?[x, y];
+                        //var bottomColor = tiles.BottomImage?[x, y] ?? tiles.TopImage?[x, y];
+                        //var horizontalColor = leftColor.HasValue && rightColor.HasValue ? MultiplyColorWithScalar(leftColor.Value, leftInfluence).ToVector4() + MultiplyColorWithScalar(rightColor.Value, rightInfluence).ToVector4() : Vector4.Zero;
+                        //var verticalColor = topColor.HasValue && bottomColor.HasValue ? MultiplyColorWithScalar(topColor.Value, topInfluence).ToVector4() + MultiplyColorWithScalar(bottomColor.Value, bottomInfluence).ToVector4() : Vector4.Zero;
+                        //var resultColor = Vector4.Multiply(horizontalColor, horizontalInfluence) + Vector4.Multiply(verticalColor, verticalInfluence);
+                        //resultImage[x, y] = new Rgba32(resultColor);
                     }
                 }
 
@@ -68,6 +115,23 @@ namespace TileMerger.Imageing
             });
 
             return await t;
+        }
+
+        private static float NormalizedMergeInfluence(Tiles tiles, Point2D currentPoint, PolyLine2D lines, Polygon2D polygon)
+        {
+            double mergeDistance;
+            double minDistance = lines.ClosestPointTo(currentPoint).DistanceTo(currentPoint);
+            if (polygon.EnclosesPoint(currentPoint))
+            {
+                mergeDistance = minDistance + tiles.MergeWidth;
+            }
+            else
+            {
+                mergeDistance = tiles.MergeWidth - minDistance;
+            }
+
+            float normalizedMergeInfluence = (float)mergeDistance / (tiles.MergeWidth * 2f);
+            return normalizedMergeInfluence;
         }
 
         private static Rgba32 MultiplyColorWithScalar(Rgba32 color, float influence, bool includeA = false)
@@ -81,6 +145,61 @@ namespace TileMerger.Imageing
             return new Rgba32(colorVector);
         }
 
+        private static PolyLine2D GetBorderLines(bool hasLeft, bool hasRight, bool hasOpposite, Point2D leftBottomPoint, Point2D leftMergePoint, Point2D leftTopPoint, Point2D centerMergePoint, Point2D rightTopPoint, Point2D rightMergePoint, Point2D rightBottomPoint, out Polygon2D polygon)
+        {
+            var result = new List<Point2D>();
+            var polygonResult = new List<Point2D>();
 
+            if (hasLeft)
+            {
+                result.Add(leftBottomPoint);
+                polygonResult.Add(leftBottomPoint);
+            }
+            else
+            {
+                polygonResult.Add(leftBottomPoint);
+            }
+
+            if (!hasLeft && hasOpposite)
+            {
+                result.Add(leftMergePoint);
+                polygonResult.Add(leftMergePoint);
+            }
+
+            if (!hasLeft && !hasOpposite)
+            {
+                result.Add(leftTopPoint);
+                polygonResult.Add(leftTopPoint);
+            }
+
+            result.Add(centerMergePoint);
+            polygonResult.Add(centerMergePoint);
+
+            if (!hasRight && !hasOpposite)
+            {
+                result.Add(rightTopPoint);
+                polygonResult.Add(rightTopPoint);
+            }
+
+            if (!hasRight && hasOpposite)
+            {
+                result.Add(rightMergePoint);
+                polygonResult.Add(rightMergePoint);
+            }
+
+            if (hasRight)
+            {
+                result.Add(rightBottomPoint);
+                polygonResult.Add(rightBottomPoint);
+            }
+            else
+            {
+                polygonResult.Add(rightBottomPoint);
+            }
+
+
+            polygon = new Polygon2D(polygonResult);
+            return new PolyLine2D(result);
+        }
     }
 }

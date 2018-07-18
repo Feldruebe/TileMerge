@@ -20,20 +20,37 @@ namespace TileMerger.Imageing
 
         public Image<Rgba32> BottomImage { get; }
 
+        public int HorizontalSeperationIndex { get; set; }
+
+        public int MergeWidth { get; set; }
+
+        public int HorizontalSeperationStartIndex => this.HorizontalSeperationIndex - this.MergeWidth;
+
+        public int HorizontalSeperationEndIndex => this.HorizontalSeperationIndex + this.MergeWidth;
+
+
+        public int VerticalSeperationIndex { get; set; }
+
+        public int VerticalMergeWidth { get; set; }
+
+        public int VerticalSeperationStartIndex => this.VerticalSeperationIndex - this.VerticalMergeWidth;
+
+        public int VerticalSeperationEndIndex => this.VerticalSeperationIndex + this.VerticalMergeWidth;
+
+        public int ImagesWidth => this.TopImage?.Width ?? this.LeftImage?.Width ?? this.BottomImage?.Width ?? this.RightImage?.Width ?? -1;
+        public int ImagesHeight => this.TopImage?.Height ?? this.LeftImage?.Height ?? this.BottomImage?.Height ?? this.RightImage?.Height ?? -1;
+
         public bool CheckSize()
         {
-            int referenceWidth = this.TopImage?.Width ?? this.LeftImage?.Width ?? this.BottomImage?.Width ?? this.RightImage?.Width ?? -1;
-            int referenceHeight = this.TopImage?.Height ?? this.LeftImage?.Height ?? this.BottomImage?.Height ?? this.RightImage?.Height ?? -1;
+            var widthOk = (this.TopImage?.Width ?? ImagesWidth) == ImagesWidth &&
+                          (this.LeftImage?.Width ?? ImagesWidth) == ImagesWidth &&
+                          (this.BottomImage?.Width ?? ImagesWidth) == ImagesWidth &&
+                          (this.RightImage?.Width ?? ImagesWidth) == ImagesWidth;
 
-            var widthOk = (this.TopImage?.Width ?? referenceWidth) == referenceWidth &&
-                          (this.LeftImage?.Width ?? referenceWidth) == referenceWidth &&
-                          (this.BottomImage?.Width ?? referenceWidth) == referenceWidth &&
-                          (this.RightImage?.Width ?? referenceWidth) == referenceWidth;
-
-            var heightOk = (this.TopImage?.Height ?? referenceWidth) == referenceHeight &&
-                           (this.LeftImage?.Height ?? referenceWidth) == referenceHeight &&
-                           (this.BottomImage?.Height ?? referenceWidth) == referenceHeight &&
-                           (this.RightImage?.Height ?? referenceWidth) == referenceHeight;
+            var heightOk = (this.TopImage?.Height ?? ImagesHeight) == ImagesHeight &&
+                           (this.LeftImage?.Height ?? ImagesHeight) == ImagesHeight &&
+                           (this.BottomImage?.Height ?? ImagesHeight) == ImagesHeight &&
+                           (this.RightImage?.Height ?? ImagesHeight) == ImagesHeight;
 
             return widthOk && heightOk;
         }

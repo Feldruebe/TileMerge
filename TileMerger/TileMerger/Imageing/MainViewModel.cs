@@ -15,6 +15,8 @@ using TileMerger.Imageing;
 
 namespace TileMerger.ViewModel
 {
+    using System.Net.Cache;
+
     /// <summary>
     /// This class contains properties that the main View can data bind to.
     /// <para>
@@ -39,6 +41,17 @@ namespace TileMerger.ViewModel
         private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private Task mergeTask;
 
+        private int mergeWidth = 10;
+        private int horizontalSeperationIndex = 25;
+        private int verticalMergeWidth = 10;
+        private int verticalSeperationIndex = 25;
+
+        private int referenzWidth;
+        private int halfReferenzWidth;
+
+        private int referenzHeight;
+        private int halfReferenzHeight;
+
         /// <summary>
         /// Initializes a new instance of the MainViewModel class.
         /// </summary>
@@ -56,7 +69,81 @@ namespace TileMerger.ViewModel
 
         public BitmapImage MergedTileImage { get => this.mergedTileImage; set => this.Set(ref this.mergedTileImage, value); }
 
+        public int ReferenzWidth
+        {
+            get => this.referenzWidth;
+            set
+            {
+                this.Set(ref this.referenzWidth, value);
+                this.HalfReferenzWidth = value / 2;
+            }
+        }
+
+        public int HalfReferenzWidth
+        {
+            get => this.halfReferenzWidth;
+            set => this.Set(ref this.halfReferenzWidth, value);
+        }
+
+        public int ReferenzHeight
+        {
+            get => this.referenzHeight;
+            set
+            {
+                this.Set(ref this.referenzHeight, value);
+                this.HalfReferenzHeight = value / 2;
+            }
+        }
+
+        public int HalfReferenzHeight
+        {
+            get => this.halfReferenzHeight;
+            set => this.Set(ref this.halfReferenzHeight, value);
+        }
+
+        public int MergeWidth
+        {
+            get => this.mergeWidth;
+            set
+            {
+                this.Set(ref this.mergeWidth, value);
+                this.MergeTiles();
+            }
+        }
+
+        public int HorizontalSeperationIndex
+        {
+            get => this.horizontalSeperationIndex;
+            set
+            {
+                this.Set(ref this.horizontalSeperationIndex, value);
+                this.MergeTiles();
+            }
+        }
+
+        public int VerticalMergeWidth
+        {
+            get => this.verticalMergeWidth;
+            set
+            {
+                this.Set(ref this.verticalMergeWidth, value);
+                this.MergeTiles();
+            }
+        }
+
+        public int VerticalSeperationIndex
+        {
+            get => this.verticalSeperationIndex;
+            set
+            {
+                this.Set(ref this.verticalSeperationIndex, value);
+                this.MergeTiles();
+            }
+        }
+
         public RelayCommand<TileType> LoadTileCommand => new RelayCommand<TileType>(tileType => this.LoadTile(tileType));
+
+        public RelayCommand<TileType> DeleteImageCommand => new RelayCommand<TileType>(tileType => this.DeleteTile(tileType));
 
         public RelayCommand MergeTilesCommand => new RelayCommand(this.MergeTiles);
 
@@ -86,6 +173,32 @@ namespace TileMerger.ViewModel
             this.MergeTiles();
         }
 
+        private void DeleteTile(TileType tileType)
+        {
+            switch (tileType)
+            {
+                case TileType.Top:
+                    this.TopTileImage = null;
+                    break;
+
+                case TileType.Left:
+                    this.LeftTileImage = null;
+                    break;
+
+                case TileType.Bottom:
+                    this.BottomTileImage = null;
+                    break;
+
+                case TileType.Right:
+                    this.RightTileImage = null;
+                    break;
+                default:
+                    break;
+            }
+
+            this.MergeTiles();
+        }
+
         private BitmapImage OpenImage()
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
@@ -93,7 +206,20 @@ namespace TileMerger.ViewModel
             if (result)
             {
                 var image = new BitmapImage(new Uri(openFileDialog.FileName));
-                return image;
+
+                if (this.TopTileImage == null && this.LeftTileImage == null && this.BottomTileImage == null && this.RightTileImage == null)
+                {
+                    this.ReferenzWidth = image.PixelWidth;
+                    this.ReferenzHeight = image.PixelHeight;
+                    return image;
+                }
+
+                if (this.ReferenzWidth == image.PixelWidth && this.ReferenzHeight == image.PixelHeight)
+                {
+                    return image;
+                }
+
+                MessageBox.Show("The size of the images have to be the same!");
             }
 
             return null;
@@ -106,6 +232,7 @@ namespace TileMerger.ViewModel
                 this.cancellationTokenSource.Cancel();
             }
 
+            this.cancellationTokenSource = new CancellationTokenSource();
             this.mergeTask = Task.Run(
                 () => this.MergeTilesAsync(this.cancellationTokenSource.Token),
                 this.cancellationTokenSource.Token);
@@ -118,7 +245,13 @@ namespace TileMerger.ViewModel
             Image<Rgba32> bottom = this.BottomTileImage != null ? Image.Load<Rgba32>(this.GetPngFromImageControl(this.BottomTileImage)) : null;
             Image<Rgba32> right = this.RightTileImage != null ? Image.Load<Rgba32>(this.GetPngFromImageControl(this.RightTileImage)) : null;
 
-            var tiles = new Tiles(top, left, bottom, right);
+            var tiles = new Tiles(top, left, bottom, right)
+            {
+                MergeWidth = this.MergeWidth,
+                HorizontalSeperationIndex = this.HorizontalSeperationIndex,
+                VerticalMergeWidth = this.VerticalMergeWidth,
+                VerticalSeperationIndex = this.VerticalSeperationIndex
+            };
             var mergeTile = await TileMerge.MergeTiles(tiles, token);
 
             token.ThrowIfCancellationRequested();
@@ -143,11 +276,14 @@ namespace TileMerger.ViewModel
 
         public byte[] GetPngFromImageControl(BitmapImage imageC)
         {
-            MemoryStream memStream = new MemoryStream();
-            PngBitmapEncoder encoder = new PngBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(imageC));
-            encoder.Save(memStream);
-            return memStream.ToArray();
+            using (var memStream = new MemoryStream())
+            {
+                PngBitmapEncoder encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(imageC));
+                encoder.Save(memStream);
+                byte[] bytes = memStream.ToArray();
+                return bytes;
+            }
         }
 
         private BitmapImage BytesToImage(byte[] imageData)
@@ -161,9 +297,8 @@ namespace TileMerger.ViewModel
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
                 bitmap.StreamSource = stream;
                 bitmap.EndInit();
+                return bitmap;
             }
-
-            return bitmap;
         }
 
         private void DispatchToGui(Action action)
