@@ -59,14 +59,31 @@ namespace TileMerger.Imageing
                         token.ThrowIfCancellationRequested();
                         var currentPoint = new Point2D(x, yIteration);
 
-                        var normalizedMergeInfluence = NormalizedMergeInfluence(tiles, currentPoint, leftLines, leftPolygon);
+                        var leftNormalizedMergeInfluence = tiles.LeftImage != null ? NormalizedMergeInfluence(tiles, currentPoint, leftLines, leftPolygon) : 0;
+                        var topNormalizedMergeInfluence = tiles.TopImage != null ? NormalizedMergeInfluence(tiles, currentPoint, topLines, topPolygon) : 0;
+                        var rightNormalizedMergeInfluence = tiles.RightImage != null ? NormalizedMergeInfluence(tiles, currentPoint, rightLines, rightPolygon) : 0;
+                        var bottomNormalizedMergeInfluence = tiles.BottomImage != null ? NormalizedMergeInfluence(tiles, currentPoint, bottomLines, bottomPolygon) : 0;
 
-                        resultImage[x, y] = new Rgba32(1, 0, normalizedMergeInfluence, 1);
+                        var influenceSum = leftNormalizedMergeInfluence + topNormalizedMergeInfluence + rightNormalizedMergeInfluence + bottomNormalizedMergeInfluence;
 
-                        //if (leftPolygon.EnclosesPoint(currentPoint))
-                        //{
-                        //    resultImage[x, y] = new Rgba32(255, 0, 0, 20);
-                        //}
+                        var overallLeftInfluence = leftNormalizedMergeInfluence / influenceSum;
+                        var overallTopInfluence = topNormalizedMergeInfluence / influenceSum;
+                        var overallRightInfluence = rightNormalizedMergeInfluence / influenceSum;
+                        var overallBottomInfluence = bottomNormalizedMergeInfluence / influenceSum;
+
+                        var leftColorVector = tiles.LeftImage?[x, y].ToVector4() ?? Vector4.Zero;
+                        var topColorVector = tiles.TopImage?[x, y].ToVector4() ?? Vector4.Zero;
+                        var rightColorVector = tiles.RightImage?[x, y].ToVector4() ?? Vector4.Zero;
+                        var bottomColorVector = tiles.BottomImage?[x, y].ToVector4() ?? Vector4.Zero;
+
+                        Vector4 colorVector = (leftColorVector * overallLeftInfluence) + (topColorVector * overallTopInfluence) + (rightColorVector * overallRightInfluence)
+                                              + (bottomColorVector * overallBottomInfluence);
+
+
+                        //resultImage[x, y] = new Rgba32(colorVector);
+
+                        //resultImage[x, y] = new Rgba32(leftColorVector * overallLeftInfluence);
+                        resultImage[x, y] = new Rgba32(topNormalizedMergeInfluence, 0, 0);
 
                         //if (topPolygon.EnclosesPoint(currentPoint))
                         //{
