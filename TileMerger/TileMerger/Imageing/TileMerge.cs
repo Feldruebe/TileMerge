@@ -83,7 +83,8 @@ namespace TileMerger.Imageing
                         //resultImage[x, y] = new Rgba32(colorVector);
 
                         //resultImage[x, y] = new Rgba32(leftColorVector * overallLeftInfluence);
-                        resultImage[x, y] = new Rgba32(topNormalizedMergeInfluence, 0, 0);
+                        resultImage[x, y] = new Rgba32(colorVector);
+                        //resultImage[x, y] = new Rgba32(topNormalizedMergeInfluence, 0, 0);
 
                         //if (topPolygon.EnclosesPoint(currentPoint))
                         //{
@@ -145,6 +146,10 @@ namespace TileMerger.Imageing
             else
             {
                 mergeDistance = tiles.MergeWidth - minDistance;
+                if(mergeDistance < 0)
+                {
+                    mergeDistance = 0;
+                }
             }
 
             float normalizedMergeInfluence = (float)mergeDistance / (tiles.MergeWidth * 2f);
