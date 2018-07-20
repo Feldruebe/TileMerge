@@ -1,22 +1,39 @@
 ﻿<mah:MetroWindow x:Class="TileMerger.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:TileMerger"
-        xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
-        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
-        xmlns:viewmodel="clr-namespace:TileMerger.ViewModel"
-        mc:Ignorable="d" Width="512" Height="512"
-        Title="MainWindow"
-        DataContext="{Binding Main, Source={StaticResource Locator}}"
-        d:DataContext="{d:DesignInstance viewmodel:MainViewModel}">
-  <Grid>
-    <Grid.Resources>
-      <Style x:Key="TileButtonStyle" />
-      <BitmapImage x:Key="DefaultTileImage" UriSource="Images/Tile.png"/>
-    </Grid.Resources>
-    <Grid Grid.Row="0" Grid.ColumnSpan="2" Grid.RowSpan="2">
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:local="clr-namespace:TileMerger"
+                 xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+                 xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                 xmlns:viewmodel="clr-namespace:TileMerger.ViewModel"
+                 xmlns:shared="urn:mlog-sharedclasses-ns"
+                 mc:Ignorable="d" 
+                 Width="472" Height="500"
+                 
+                 Title="MainWindow"
+                 DataContext="{Binding Main, Source={StaticResource Locator}}"
+                 d:DataContext="{d:DesignInstance viewmodel:MainViewModel}">
+  <Viewbox>
+    <Grid Width="500" Height="500" >
+      <Grid.Resources>
+        <Style x:Key="TileButtonStyle"/>
+        <Style x:Key="DeletButtonStyle" TargetType="Button" BasedOn="{StaticResource MetroCircleButtonStyle}">
+          <Setter Property="Visibility" Value="Collapsed" />
+          <Setter Property="HorizontalAlignment" Value="Right" />
+          <Setter Property="VerticalAlignment" Value="Top" />
+          <Setter Property="Width" Value="50" />
+          <Setter Property="Height" Value="50" />
+          <Setter Property="Background" Value="#7FFFFFFF" />
+          <Setter Property="Command" Value="{Binding DeleteImageCommand}" />
+          <Style.Triggers>
+            <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type Button}}}" Value="True">
+              <Setter Property="Visibility" Value="Visible" />
+            </DataTrigger>
+          </Style.Triggers>
+        </Style>
+        <BitmapImage x:Key="DefaultTileImage" UriSource="Images/Tile.png"/>
+      </Grid.Resources>
       <Grid.RowDefinitions>
         <RowDefinition Height="*"/>
         <RowDefinition Height="*"/>
@@ -35,7 +52,8 @@
         <Grid>
           <Image Source="{Binding TopTileImage, TargetNullValue={StaticResource DefaultTileImage}}" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
           <TextBlock Text="Top Tile" FontSize="25" FontWeight="Bold" VerticalAlignment="Top" HorizontalAlignment="Center" Background="#7FDADADA"/>
-          <Button HorizontalAlignment="Right" VerticalAlignment="Top" Style="{StaticResource MetroCircleButtonStyle}" Width="50" Height="50" Background="Red" Command="{Binding DeleteImageCommand}" CommandParameter="{x:Static viewmodel:TileType.Top}">
+          <Button Style="{StaticResource DeletButtonStyle}" 
+                  CommandParameter="{x:Static viewmodel:TileType.Top}">
             <iconPacks:MaterialLight Kind="Delete" Width="25" Height="25" />
           </Button>
         </Grid>
@@ -48,7 +66,8 @@
         <Grid>
           <Image Source="{Binding LeftTileImage, TargetNullValue={StaticResource DefaultTileImage}}" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
           <TextBlock Text="Left Tile" FontSize="25" FontWeight="Bold" VerticalAlignment="Bottom" HorizontalAlignment="Left" Background="#7FDADADA"/>
-          <Button HorizontalAlignment="Right" VerticalAlignment="Top" Style="{StaticResource MetroCircleButtonStyle}" Width="50" Height="50" Background="Red" Command="{Binding DeleteImageCommand}" CommandParameter="{x:Static viewmodel:TileType.Left}">
+          <Button x:Name="Button1" Style="{StaticResource DeletButtonStyle}"
+                  CommandParameter="{x:Static viewmodel:TileType.Left}">
             <iconPacks:MaterialLight Kind="Delete" Width="25" Height="25" />
           </Button>
         </Grid>
@@ -62,7 +81,8 @@
         <Grid>
           <Image Source="{Binding BottomTileImage, TargetNullValue={StaticResource DefaultTileImage}}" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
           <TextBlock Text="Bottom Tile" FontSize="25" FontWeight="Bold" VerticalAlignment="Bottom" HorizontalAlignment="Center" Background="#7FDADADA"/>
-          <Button HorizontalAlignment="Right" VerticalAlignment="Top" Style="{StaticResource MetroCircleButtonStyle}" Width="50" Height="50" Background="Red" Command="{Binding DeleteImageCommand}" CommandParameter="{x:Static viewmodel:TileType.Bottom}">
+          <Button Style="{StaticResource DeletButtonStyle}"
+                  CommandParameter="{x:Static viewmodel:TileType.Bottom}">
             <iconPacks:MaterialLight Kind="Delete" Width="25" Height="25" />
           </Button>
         </Grid>
@@ -75,7 +95,7 @@
         <Grid>
           <Image Source="{Binding RightTileImage, TargetNullValue={StaticResource DefaultTileImage}}" RenderOptions.BitmapScalingMode="NearestNeighbor" />
           <TextBlock Text="Right Tile" FontSize="25" FontWeight="Bold" VerticalAlignment="Bottom" HorizontalAlignment="Right" Background="#7FDADADA"/>
-          <Button HorizontalAlignment="Right" VerticalAlignment="Top" Style="{StaticResource MetroCircleButtonStyle}" Width="50" Height="50" Background="Red" Command="{Binding DeleteImageCommand}" CommandParameter="{x:Static viewmodel:TileType.Right}">
+          <Button Style="{StaticResource DeletButtonStyle}" CommandParameter="{x:Static viewmodel:TileType.Right}">
             <iconPacks:MaterialLight Kind="Delete" Width="25" Height="25" />
           </Button>
         </Grid>
@@ -90,24 +110,29 @@
           <RowDefinition Height="Auto" />
           <RowDefinition Height="5" />
           <RowDefinition Height="Auto" />
+          <RowDefinition Height="5" />
+          <RowDefinition Height="Auto" />
           <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="60" />
           <ColumnDefinition Width="5" />
           <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
-        <TextBlock Grid.Row="0" Grid.Column="0" Text="Blend Start:" VerticalAlignment="Center"/>
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Horizontal Blend:" VerticalAlignment="Center" TextWrapping="Wrap"/>
         <Slider Grid.Row="0" Grid.Column="2" Value="{Binding HorizontalSeperationIndex}" Minimum="0" Maximum="{Binding ReferenzWidth}" />
 
-        <TextBlock Grid.Row="2" Grid.Column="0" Text="Blend Width:" VerticalAlignment="Center" />
-        <Slider Grid.Row="2" Grid.Column="2" Value="{Binding MergeWidth}" Minimum="0" Maximum="{Binding HalfReferenzWidth}" />
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="Vertical Blend:" VerticalAlignment="Center" TextWrapping="Wrap"/>
+        <Slider Grid.Row="2" Grid.Column="2" Value="{Binding VerticalSeperationIndex}" Minimum="0" Maximum="{Binding ReferenzWidth}" />
 
-        <Button Grid.Row="3" Grid.Column="2" HorizontalAlignment="Right" Style="{StaticResource MetroCircleButtonStyle}" Width="50" Height="50">
+        <TextBlock Grid.Row="4" Grid.Column="0" Text="Blend Width:" VerticalAlignment="Center" />
+        <Slider Grid.Row="4" Grid.Column="2" Value="{Binding MergeWidth}" Minimum="0" Maximum="{Binding HalfReferenzWidth}" />
+
+        <Button Grid.Row="5" Grid.Column="2" HorizontalAlignment="Right" Style="{StaticResource MetroCircleButtonStyle}" Width="50" Height="50">
           <iconPacks:MaterialLight Kind="ContentSaveAll" Width="25" Height="25"/>
         </Button>
       </Grid>
     </Grid>
-  </Grid>
+  </Viewbox>
 </mah:MetroWindow>
 

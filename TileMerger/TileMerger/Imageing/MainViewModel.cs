@@ -16,6 +16,8 @@ using TileMerger.Imageing;
 namespace TileMerger.ViewModel
 {
     using System.Net.Cache;
+    using System.Reactive;
+    using System.Reactive.Linq;
 
     /// <summary>
     /// This class contains properties that the main View can data bind to.
@@ -52,11 +54,17 @@ namespace TileMerger.ViewModel
         private int referenzHeight;
         private int halfReferenzHeight;
 
+        private IObservable<EventPattern<object>> mergeThrottle;
+
+        private event EventHandler OnMergeTriggered;
+
         /// <summary>
         /// Initializes a new instance of the MainViewModel class.
         /// </summary>
         public MainViewModel()
         {
+            this.mergeThrottle = Observable.FromEventPattern(ev => this.OnMergeTriggered += ev, ev => this.OnMergeTriggered -= ev).Throttle(TimeSpan.FromMilliseconds(250));
+            this.mergeThrottle.Subscribe(pattern => this.MergeTiles());
         }
 
         public BitmapImage TopTileImage { get => this.topTileImage; set => this.Set(ref this.topTileImage, value); }
@@ -107,7 +115,7 @@ namespace TileMerger.ViewModel
             set
             {
                 this.Set(ref this.mergeWidth, value);
-                this.MergeTiles();
+                this.RaisOnMergeTriggered();
             }
         }
 
@@ -117,7 +125,7 @@ namespace TileMerger.ViewModel
             set
             {
                 this.Set(ref this.horizontalSeperationIndex, value);
-                this.MergeTiles();
+                this.RaisOnMergeTriggered();
             }
         }
 
@@ -127,7 +135,7 @@ namespace TileMerger.ViewModel
             set
             {
                 this.Set(ref this.verticalMergeWidth, value);
-                this.MergeTiles();
+                this.RaisOnMergeTriggered();
             }
         }
 
@@ -137,13 +145,13 @@ namespace TileMerger.ViewModel
             set
             {
                 this.Set(ref this.verticalSeperationIndex, value);
-                this.MergeTiles();
+                this.RaisOnMergeTriggered();
             }
         }
 
-        public RelayCommand<TileType> LoadTileCommand => new RelayCommand<TileType>(tileType => this.LoadTile(tileType));
+        public RelayCommand<TileType> LoadTileCommand => new RelayCommand<TileType>(this.LoadTile);
 
-        public RelayCommand<TileType> DeleteImageCommand => new RelayCommand<TileType>(tileType => this.DeleteTile(tileType));
+        public RelayCommand<TileType> DeleteImageCommand => new RelayCommand<TileType>(this.DeleteTile);
 
         public RelayCommand MergeTilesCommand => new RelayCommand(this.MergeTiles);
 
@@ -170,7 +178,7 @@ namespace TileMerger.ViewModel
                     break;
             }
 
-            this.MergeTiles();
+            this.RaisOnMergeTriggered();
         }
 
         private void DeleteTile(TileType tileType)
@@ -196,7 +204,7 @@ namespace TileMerger.ViewModel
                     break;
             }
 
-            this.MergeTiles();
+            this.RaisOnMergeTriggered();
         }
 
         private BitmapImage OpenImage()
@@ -307,6 +315,11 @@ namespace TileMerger.ViewModel
             {
                 action();
             });
+        }
+
+        protected virtual void RaisOnMergeTriggered()
+        {
+            this.OnMergeTriggered?.Invoke(null, null);
         }
     }
 }

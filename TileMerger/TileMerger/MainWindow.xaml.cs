@@ -3,6 +3,7 @@
     using System.IO;
     using System.Numerics;
     using System.Windows;
+    using System.Windows.Input;
     using System.Windows.Media;
 
     using SixLabors.ImageSharp;
@@ -25,6 +26,11 @@
         public MainWindow()
         {
             InitializeComponent();
+        }
+
+        private void UIElement_OnMouseEnter(object sender, MouseEventArgs e)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }
