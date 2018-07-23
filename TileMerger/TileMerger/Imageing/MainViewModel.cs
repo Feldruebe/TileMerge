@@ -155,6 +155,8 @@ namespace TileMerger.ViewModel
 
         public RelayCommand MergeTilesCommand => new RelayCommand(this.MergeTiles);
 
+        public RelayCommand SaveMergedImageCommand => new RelayCommand(this.SaveMergedImage);
+        
         private void LoadTile(TileType tileType)
         {
             switch (tileType)
@@ -315,6 +317,35 @@ namespace TileMerger.ViewModel
             {
                 action();
             });
+        }
+
+        private void SaveMergedImage()
+        {
+            if (this.MergedTileImage == null)
+            {
+                return;
+            }
+
+            SaveFileDialog saveFileDialog = new SaveFileDialog()
+                                                {
+                                                    AddExtension = true,
+                                                    DefaultExt = ".png",
+                                                    Filter = "*.png|*.png"
+                                                };
+
+            var result = saveFileDialog.ShowDialog();
+
+            if (result == true)
+            {
+                BitmapFrame frame = BitmapFrame.Create(this.MergedTileImage);
+                PngBitmapEncoder encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(frame);
+
+                using (var stream = File.Create(saveFileDialog.FileName))
+                {
+                    encoder.Save(stream);
+                }
+            }
         }
 
         protected virtual void RaisOnMergeTriggered()

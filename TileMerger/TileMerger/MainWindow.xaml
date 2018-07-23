@@ -128,7 +128,7 @@
         <TextBlock Grid.Row="4" Grid.Column="0" Text="Blend Width:" VerticalAlignment="Center" />
         <Slider Grid.Row="4" Grid.Column="2" Value="{Binding MergeWidth}" Minimum="0" Maximum="{Binding HalfReferenzWidth}" />
 
-        <Button Grid.Row="5" Grid.Column="2" HorizontalAlignment="Right" Style="{StaticResource MetroCircleButtonStyle}" Width="50" Height="50">
+        <Button Grid.Row="5" Grid.Column="2" HorizontalAlignment="Right" Style="{StaticResource MetroCircleButtonStyle}" Width="50" Height="50" Command="{Binding SaveMergedImageCommand}">
           <iconPacks:MaterialLight Kind="ContentSaveAll" Width="25" Height="25"/>
         </Button>
       </Grid>
