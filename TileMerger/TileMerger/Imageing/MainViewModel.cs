@@ -56,6 +56,8 @@ namespace TileMerger.ViewModel
 
         private IObservable<EventPattern<object>> mergeThrottle;
 
+        private bool saveMirroredCombinations;
+
         private event EventHandler OnMergeTriggered;
 
         /// <summary>
@@ -77,6 +79,7 @@ namespace TileMerger.ViewModel
 
         public BitmapImage MergedTileImage { get => this.mergedTileImage; set => this.Set(ref this.mergedTileImage, value); }
 
+        public bool SaveMirroredCombinations { get => this.saveMirroredCombinations; set => this.Set(ref this.saveMirroredCombinations, value); }
 
         public int ReferenzWidth
         {
@@ -157,7 +160,7 @@ namespace TileMerger.ViewModel
         public RelayCommand MergeTilesCommand => new RelayCommand(this.MergeTiles);
 
         public RelayCommand SaveMergedImageCommand => new RelayCommand(this.SaveMergedImage);
-        
+
         private void LoadTile(TileType tileType)
         {
             switch (tileType)
@@ -263,7 +266,7 @@ namespace TileMerger.ViewModel
                 VerticalMergeWidth = this.VerticalMergeWidth,
                 VerticalSeperationIndex = this.VerticalSeperationIndex
             };
-            var mergeTile = await TileMerge.MergeTiles(tiles, token);
+            var mergeTile = await TileMerge.MergeTilesAsync(tiles, token);
 
             token.ThrowIfCancellationRequested();
             if (mergeTile != null)
@@ -332,25 +335,103 @@ namespace TileMerger.ViewModel
             mergeFileName += this.RightTileImage != null ? Path.GetFileNameWithoutExtension(this.RightTileImage.UriSource.AbsolutePath) : string.Empty;
             mergeFileName += this.BottomTileImage != null ? Path.GetFileNameWithoutExtension(this.BottomTileImage.UriSource.AbsolutePath) : string.Empty;
 
-            SaveFileDialog saveFileDialog = new SaveFileDialog()
-                                                {
-                                                    AddExtension = true,
-                                                    DefaultExt = ".png",
-                                                    Filter = "*.png|*.png",
-                                                    FileName = mergeFileName
-                                                };
+            SaveFileDialog saveFileDialog = new SaveFileDialog() { AddExtension = true, DefaultExt = ".png", Filter = "*.png|*.png", FileName = mergeFileName };
 
             var result = saveFileDialog.ShowDialog();
 
             if (result == true)
             {
-                BitmapFrame frame = BitmapFrame.Create(this.MergedTileImage);
-                PngBitmapEncoder encoder = new PngBitmapEncoder();
-                encoder.Frames.Add(frame);
-
-                using (var stream = File.Create(saveFileDialog.FileName))
+                if (this.SaveMirroredCombinations)
                 {
-                    encoder.Save(stream);
+                    this.SaveMirrorImages(saveFileDialog.FileName);
+                }
+                else
+                {
+                    BitmapFrame frame = BitmapFrame.Create(this.MergedTileImage);
+                    PngBitmapEncoder encoder = new PngBitmapEncoder();
+                    encoder.Frames.Add(frame);
+
+                    using (var stream = File.Create(saveFileDialog.FileName))
+                    {
+                        encoder.Save(stream);
+                    }
+                }
+            }
+        }
+
+        private void SaveMirrorImages(string fileName)
+        {
+            Image<Rgba32> top = this.TopTileImage != null ? Image.Load<Rgba32>(this.GetPngFromImageControl(this.TopTileImage)) : null;
+            Image<Rgba32> left = this.LeftTileImage != null ? Image.Load<Rgba32>(this.GetPngFromImageControl(this.LeftTileImage)) : null;
+            Image<Rgba32> bottom = this.BottomTileImage != null ? Image.Load<Rgba32>(this.GetPngFromImageControl(this.BottomTileImage)) : null;
+            Image<Rgba32> right = this.RightTileImage != null ? Image.Load<Rgba32>(this.GetPngFromImageControl(this.RightTileImage)) : null;
+
+            var tilesNormal = new Tiles(top, left, bottom, right)
+            {
+                MergeWidth = this.MergeWidth,
+                HorizontalSeperationIndex = this.HorizontalSeperationIndex,
+                VerticalMergeWidth = this.VerticalMergeWidth,
+                VerticalSeperationIndex = this.VerticalSeperationIndex
+            };
+
+            var tilesYMirrored = new Tiles(top, right, bottom, left)
+            {
+                MergeWidth = this.MergeWidth,
+                HorizontalSeperationIndex = this.HorizontalSeperationIndex,
+                VerticalMergeWidth = this.VerticalMergeWidth,
+                VerticalSeperationIndex = this.VerticalSeperationIndex
+            };
+
+            var tilesXMirrored = new Tiles(bottom, left, top, right)
+            {
+                MergeWidth = this.MergeWidth,
+                HorizontalSeperationIndex = this.HorizontalSeperationIndex,
+                VerticalMergeWidth = this.VerticalMergeWidth,
+                VerticalSeperationIndex = this.VerticalSeperationIndex
+            };
+
+            var tilesXAndYMirrored = new Tiles(bottom, right, top, left)
+            {
+                MergeWidth = this.MergeWidth,
+                HorizontalSeperationIndex = this.HorizontalSeperationIndex,
+                VerticalMergeWidth = this.VerticalMergeWidth,
+                VerticalSeperationIndex = this.VerticalSeperationIndex
+            };
+
+            string extension = Path.GetExtension(fileName);
+            string rawFileName = Path.GetFileNameWithoutExtension(fileName);
+            string path = Path.GetDirectoryName(fileName);
+
+            var mergeTileTask1 = TileMerge.MergeTiles(tilesNormal);
+            using (FileStream fileStream = new FileStream(fileName, FileMode.Create))
+            {
+                mergeTileTask1.SaveAsPng(fileStream);
+            }
+
+            if (left != null || right != null)
+            {
+                var mergeTileTask2 = TileMerge.MergeTiles(tilesYMirrored);
+                using (FileStream fileStream = new FileStream(Path.Combine(path, $"{rawFileName}_MirroredY.{extension}"), FileMode.Create))
+                {
+                    mergeTileTask2.SaveAsPng(fileStream);
+                }
+            }
+
+            if (top != null || bottom != null)
+            {
+                var mergeTileTask3 = TileMerge.MergeTiles(tilesXMirrored);
+                using (FileStream fileStream = new FileStream(Path.Combine(path, $"{rawFileName}_MirroredX.{extension}"), FileMode.Create))
+                {
+                    mergeTileTask3.SaveAsPng(fileStream);
+                }
+            }
+
+            if ((top != null || bottom != null) && (left != null || right != null))
+            {
+                var mergeTileTask4 = TileMerge.MergeTiles(tilesXAndYMirrored);
+                using (FileStream fileStream = new FileStream(Path.Combine(path, $"{rawFileName}_MirroredXY.{extension}"), FileMode.Create))
+                {
+                    mergeTileTask4.SaveAsPng(fileStream);
                 }
             }
         }
