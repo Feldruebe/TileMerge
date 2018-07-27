@@ -77,6 +77,7 @@ namespace TileMerger.ViewModel
 
         public BitmapImage MergedTileImage { get => this.mergedTileImage; set => this.Set(ref this.mergedTileImage, value); }
 
+
         public int ReferenzWidth
         {
             get => this.referenzWidth;
@@ -326,11 +327,17 @@ namespace TileMerger.ViewModel
                 return;
             }
 
+            string mergeFileName = this.TopTileImage != null ? Path.GetFileNameWithoutExtension(this.TopTileImage.UriSource.AbsolutePath) : string.Empty;
+            mergeFileName += this.LeftTileImage != null ? Path.GetFileNameWithoutExtension(this.LeftTileImage.UriSource.AbsolutePath) : string.Empty;
+            mergeFileName += this.RightTileImage != null ? Path.GetFileNameWithoutExtension(this.RightTileImage.UriSource.AbsolutePath) : string.Empty;
+            mergeFileName += this.BottomTileImage != null ? Path.GetFileNameWithoutExtension(this.BottomTileImage.UriSource.AbsolutePath) : string.Empty;
+
             SaveFileDialog saveFileDialog = new SaveFileDialog()
                                                 {
                                                     AddExtension = true,
                                                     DefaultExt = ".png",
-                                                    Filter = "*.png|*.png"
+                                                    Filter = "*.png|*.png",
+                                                    FileName = mergeFileName
                                                 };
 
             var result = saveFileDialog.ShowDialog();
